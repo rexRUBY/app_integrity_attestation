@@ -16,35 +16,28 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
-  final _appIntegrityAttestationPlugin = AppIntegrityAttestation();
+  String _token = '토큰 없음';
+  final _plugin = AppIntegrityAttestation();
 
-  @override
-  void initState() {
-    super.initState();
-    initPlatformState();
-  }
-
-  // Platform messages are asynchronous, so we initialize in an async method.
-  Future<void> initPlatformState() async {
-    String platformVersion;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    // We also handle the message potentially returning null.
+  Future<void> _getIntegrityToken() async {
     try {
-      platformVersion =
-          await _appIntegrityAttestationPlugin.getPlatformVersion() ?? 'Unknown platform version';
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
+      final token = await _plugin.getIntegrityToken(
+        requestHash: "abcd1234",
+        cloudProjectNumber: "1234567890",
+      );
+
+      setState(() {
+        _token = token ?? "null 반환됨";
+      });
+    } on PlatformException catch (e) {
+      setState(() {
+        _token = "PlatformException: ${e.message}";
+      });
+    } catch (e) {
+      setState(() {
+        _token = "Error: $e";
+      });
     }
-
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) return;
-
-    setState(() {
-      _platformVersion = platformVersion;
-    });
   }
 
   @override
@@ -52,10 +45,20 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Plugin example app'),
+          title: const Text('Integrity Plugin Example'),
         ),
         body: Center(
-          child: Text('Running on: $_platformVersion\n'),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text("Token:\n$_token", textAlign: TextAlign.center),
+              const SizedBox(height: 30),
+              ElevatedButton(
+                onPressed: _getIntegrityToken,
+                child: const Text("무결성 토큰 요청"),
+              ),
+            ],
+          ),
         ),
       ),
     );
