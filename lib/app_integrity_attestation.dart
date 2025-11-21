@@ -10,4 +10,18 @@ class AppIntegrityAttestation {
       cloudProjectNumber: cloudProjectNumber,
     );
   }
+
+  Future<String?> generateKey() {
+    return AppIntegrityAttestationPlatform.instance.generateKey();
+  }
+
+  Future<String?> attestKey({
+    required String keyId,
+    required String challenge,
+  }) {
+    return AppIntegrityAttestationPlatform.instance.attestKey(
+      keyId: keyId,
+      challenge: challenge,
+    );
+  }
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-
 import 'package:flutter/services.dart';
 import 'package:app_integrity_attestation/app_integrity_attestation.dart';
 
@@ -16,10 +15,17 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _token = '토큰 없음';
+  // 화면에 로그 뿌려줄 변수
+  String _statusLog = '버튼을 눌러 테스트하세요.';
+
+  // iOS 테스트 흐름을 위해 KeyID 저장할 변수
+  String? _iosKeyId;
+
   final _plugin = AppIntegrityAttestation();
 
-  Future<void> _getIntegrityToken() async {
+  // 1. [Android] Integrity Token 요청
+  Future<void> _getAndroidIntegrityToken() async {
+    setState(() => _statusLog = "Android 토큰 요청 중...");
     try {
       final token = await _plugin.getIntegrityToken(
         requestHash: "abcd1234",
@@ -27,16 +33,50 @@ class _MyAppState extends State<MyApp> {
       );
 
       setState(() {
-        _token = token ?? "null 반환됨";
+        _statusLog = "Android Token:\n$token";
       });
     } on PlatformException catch (e) {
-      setState(() {
-        _token = "PlatformException: ${e.message}";
-      });
+      setState(() => _statusLog = "Android Error: ${e.message}");
     } catch (e) {
+      setState(() => _statusLog = "Error: $e");
+    }
+  }
+
+  // 2. [iOS] 키 생성 (Step 1)
+  Future<void> _generateIosKey() async {
+    setState(() => _statusLog = "iOS Key 생성 중...");
+    try {
+      final keyId = await _plugin.generateKey();
+
       setState(() {
-        _token = "Error: $e";
+        _iosKeyId = keyId; // 다음 단계를 위해 저장
+        _statusLog = "Key ID 생성 완료:\n$keyId\n\n이제 보증(Attest) 요청을 하세요.";
       });
+    } on PlatformException catch (e) {
+      setState(() => _statusLog = "iOS Key Error: ${e.message}");
+    }
+  }
+
+  // 3. [iOS] 보증 요청 (Step 2)
+  Future<void> _attestIosKey() async {
+    if (_iosKeyId == null) {
+      setState(() => _statusLog = "먼저 'iOS 키 생성'을 눌러주세요.");
+      return;
+    }
+
+    setState(() => _statusLog = "iOS Attestation 요청 중...");
+    try {
+      // challenge는 보통 서버에서 받은 값 (여기선 테스트용 임의값)
+      final attestationObj = await _plugin.attestKey(
+        keyId: _iosKeyId!,
+        challenge: "test_challenge_random_string",
+      );
+
+      setState(() {
+        _statusLog = "Attestation 성공(Base64):\n$attestationObj";
+      });
+    } on PlatformException catch (e) {
+      setState(() => _statusLog = "iOS Attest Error: ${e.message}");
     }
   }
 
@@ -44,18 +84,50 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Integrity Plugin Example'),
-        ),
-        body: Center(
+        appBar: AppBar(title: const Text('App Integrity Example')),
+        body: SingleChildScrollView(
+          // 로그 길어지니까 스크롤 필수
+          padding: const EdgeInsets.all(16),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text("Token:\n$_token", textAlign: TextAlign.center),
-              const SizedBox(height: 30),
+              // 결과 보여주는 창
+              Container(
+                padding: const EdgeInsets.all(10),
+                color: Colors.grey[200],
+                height: 200,
+                child: SingleChildScrollView(child: Text(_statusLog)),
+              ),
+              const SizedBox(height: 20),
+
+              const Text(
+                "Android Test",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               ElevatedButton(
-                onPressed: _getIntegrityToken,
-                child: const Text("무결성 토큰 요청"),
+                onPressed: _getAndroidIntegrityToken,
+                child: const Text("Play Integrity 토큰 요청"),
+              ),
+
+              const Divider(height: 30, thickness: 2),
+
+              const Text(
+                "iOS Test (App Attest)",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              ElevatedButton(
+                onPressed: _generateIosKey,
+                child: const Text("1. iOS 키 생성 (Generate Key)"),
+              ),
+              ElevatedButton(
+                onPressed: _attestIosKey,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _iosKeyId != null
+                      ? Colors.blue
+                      : Colors.grey,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text("2. iOS 보증 요청 (Attest Key)"),
               ),
             ],
           ),

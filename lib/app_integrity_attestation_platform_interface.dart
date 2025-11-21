@@ -7,7 +7,8 @@ abstract class AppIntegrityAttestationPlatform extends PlatformInterface {
 
   static final Object _token = Object();
 
-  static AppIntegrityAttestationPlatform _instance = MethodChannelAppIntegrityAttestation();
+  static AppIntegrityAttestationPlatform _instance =
+      MethodChannelAppIntegrityAttestation();
 
   static AppIntegrityAttestationPlatform get instance => _instance;
 
@@ -16,10 +17,27 @@ abstract class AppIntegrityAttestationPlatform extends PlatformInterface {
     _instance = instance;
   }
 
+  // Android ==========================================
+
   Future<String?> getIntegrityToken({
     required String requestHash,
     required String cloudProjectNumber,
   }) {
     throw UnimplementedError('getIntegrityToken() has not been implemented.');
+  }
+
+  // IOS ==============================================
+
+  // 1. 키 생성 (Key ID 반환)
+  Future<String?> generateKey() {
+    throw UnimplementedError('generateKey() has not been implemented.');
+  }
+
+  // 2. 보증서 발급 (Attestation Object 반환) -> ★ 이거 추가함!
+  Future<String?> attestKey({
+    required String keyId,
+    required String challenge,
+  }) {
+    throw UnimplementedError('attestKey() has not been implemented.');
   }
 }
