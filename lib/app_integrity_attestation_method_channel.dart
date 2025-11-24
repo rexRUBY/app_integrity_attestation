@@ -43,7 +43,7 @@ class MethodChannelAppIntegrityAttestation
       );
       return keyId;
     } on PlatformException catch (e) {
-      print("iOS Key 생성 실패: ${e.message}");
+      print("generateKey() > iOS Key 생성 실패: ${e.message}");
       return null;
     }
   }
@@ -63,7 +63,9 @@ class MethodChannelAppIntegrityAttestation
       );
       return attestation;
     } on PlatformException catch (e) {
-      print("iOS 보증서 발급 실패: ${e.message}");
+      print(
+        "attestKey(keyId: ${keyId}, challenge: ${challenge}) => iOS 보증서 발급 실패: ${e.message}",
+      );
       return null;
     }
   }
