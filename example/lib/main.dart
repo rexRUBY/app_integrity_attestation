@@ -50,7 +50,7 @@ class _MyAppState extends State<MyApp> {
 
       setState(() {
         _iosKeyId = keyId; // 다음 단계를 위해 저장
-        _statusLog = "Key ID 생성 완료:\n$keyId\n\n이제 보증(Attest) 요청을 하세요.";
+        _statusLog = "Key ID 생성 완료:\n$keyId\n\n이제 Attest 요청을 하세요.";
       });
     } on PlatformException catch (e) {
       setState(() => _statusLog = "iOS Key Error: ${e.message}");
@@ -66,7 +66,7 @@ class _MyAppState extends State<MyApp> {
 
     setState(() => _statusLog = "iOS Attestation 요청 중...");
     try {
-      // challenge는 보통 서버에서 받은 값 (여기선 테스트용 임의값)
+      // challenge는 보통 서버에서 받은 값
       final attestationObj = await _plugin.attestKey(
         keyId: _iosKeyId!,
         challenge: "test_challenge_random_string",
