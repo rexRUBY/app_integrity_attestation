@@ -33,11 +33,19 @@ abstract class AppIntegrityAttestationPlatform extends PlatformInterface {
     throw UnimplementedError('generateKey() has not been implemented.');
   }
 
-  // 2. 보증서 발급 (Attestation Object 반환) -> ★ 이거 추가함!
+  // 2. 보증서 발급 (Attestation Object 반환)
   Future<String?> attestKey({
     required String keyId,
     required String challenge,
   }) {
     throw UnimplementedError('attestKey() has not been implemented.');
+  }
+
+  // 3. 서버 요청 검증용 서명 생성 (Assertion)
+  Future<String?> assertionKey({
+    required String keyId,
+    required String clientDataHash,
+  }) {
+    throw UnimplementedError('assertionKey() has not been implemented.');
   }
 }

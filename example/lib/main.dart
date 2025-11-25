@@ -20,6 +20,7 @@ class _MyAppState extends State<MyApp> {
 
   // iOS 테스트 흐름을 위해 KeyID 저장할 변수
   String? _iosKeyId;
+  String clientDataHash = 'abcd1234';
 
   final _plugin = AppIntegrityAttestation();
 
@@ -80,6 +81,24 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  // 4. [iOS] 서버 요청 검증용 서명 생성(Step 3)
+  Future<void> _assertionIosKey() async {
+    if (_iosKeyId == null) {
+      setState(() => _statusLog = "Key ID가 없습니다. 처음부터 다시 진행해주세요.");
+      return;
+    }
+
+    setState(() => _statusLog = "iOS Assertion(서명) 생성 중...");
+    try {
+      final assertionObj = await _plugin.assertionKey(keyId: _iosKeyId ?? '', clientDataHash: clientDataHash);
+      setState(() {
+        _statusLog = "Assertion 성공(Base64)";
+      });
+    } on PlatformException catch (e) {
+      setState(() => _statusLog = "iOS Assertion Error: ${e.message}");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -128,6 +147,14 @@ class _MyAppState extends State<MyApp> {
                   foregroundColor: Colors.white,
                 ),
                 child: const Text("2. iOS 보증 요청 (Attest Key)"),
+              ),
+              ElevatedButton(
+                onPressed: _assertionIosKey,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _iosKeyId != null ? Colors.green : Colors.grey,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text("3. 요청 서명 (Assertion)"),
               ),
             ],
           ),

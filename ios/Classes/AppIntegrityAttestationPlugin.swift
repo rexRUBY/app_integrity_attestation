@@ -38,7 +38,22 @@ public class AppIntegrityAttestationPlugin: NSObject, FlutterPlugin {
                     result(base64)
                 }
             }
-            
+
+        case "assertionKey":
+            guard let args = call.arguments as? [String: Any],
+                  let keyId = args["keyId"] as? String,
+                  let clientDataHash = args["clientDataHash"] as? String else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Args missing", details: nil))
+                return
+            }
+            implementation.assertionKey(keyId: keyId, clientDataHash: clientDataHash) { assertionString, error in
+                if let error = error {
+                    result(FlutterError(code: "ASSERTION_ERROR", message: error.localizedDescription, details: nil))
+                } else {
+                    result(assertionString)
+                }
+            }
+
         case "getIntegrityToken":
              // 안드로이드용은 무시
              result(FlutterMethodNotImplemented)
