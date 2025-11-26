@@ -6,92 +6,92 @@ public class AppIntegrityAttestation {
     
     private let service = DCAppAttestService.shared
 
-    // 생성자
     public init() {}
 
-    // 1. 키 발급
+    // ==============================================
+    // 1) fresh key 생성(재사용 여부는 플러터에서 구현 해야 함)
+    // ==============================================
     func generateKey(completion: @escaping (String?, Error?) -> Void) {
-            // 1. 디바이스 지원 여부 체크 (기존 코드 유지)
-            if !service.isSupported {
-                let error = NSError(domain: "AppIntegrity", code: 400, userInfo: [NSLocalizedDescriptionKey: "Device not supported"])
-                completion(nil, error)
-                return
-            }
+        guard service.isSupported else {
+            let err = NSError(
+                domain: "AppIntegrity",
+                code: 400,
+                userInfo: [NSLocalizedDescriptionKey: "Device not supported"]
+            )
+            completion(nil, err)
+            return
+        }
 
-            // 2. [핵심] 이미 저장된 키 ID가 있는지 먼저 확인!
-            if let existingKeyId = self.getKeyIdFromStorage() {
-                print("기존 키가 존재해서 이걸 반환함: \(existingKeyId)")
-                completion(existingKeyId, nil)
-                return
-            }
+        // 기존 키 전부 제거
+        clearKeyIdFromStorage()
 
-            // 3. 없으면 새로 생성
-            service.generateKey { keyId, error in
-                if let error = error as NSError?, error.code == -25299 {
-                     // 옵션 A: 중복 에러가 나면 기존 키를 강제로 다시 조회해서 반환 시도
-                     // 옵션 B: (더 추천) 기존 키를 삭제하고 다시 생성 (Reset)
-                     print("키체인 중복 에러 발생. 기존 키 정리 후 재시도 필요.")
-                }
-                // 정상 생성된 경우
-                if let newKeyId = keyId {
-                    self.saveKeyIdToStorage(newKeyId) // 생성된 ID 저장
-                }
-                completion(keyId, error)
+        // 완전히 fresh key 생성
+        service.generateKey { keyId, error in
+            if let keyId = keyId {
+                self.saveKeyIdToStorage(keyId)
             }
+            completion(keyId, error)
+        }
     }
 
-    // 2. 보증서 발급
+    // ============================
+    // 2) Attestation
+    // ============================
     func attestKey(keyId: String, challenge: String, completion: @escaping (String?, Error?) -> Void) {
-        print("attest에서 받은 키 값:\(keyId)")
-        guard let challengeData = challenge.data(using: .utf8) else {
-            let error = NSError(domain: "AppIntegrity", code: 401, userInfo: [NSLocalizedDescriptionKey: "Invalid challenge"])
-            completion(nil, error)
+        print("attest에 사용 한 키")
+        print(keyId)
+        guard let data = challenge.data(using: .utf8) else {
+            let err = NSError(domain: "AppIntegrity", code: 401,
+                              userInfo: [NSLocalizedDescriptionKey: "Invalid challenge"])
+            completion(nil, err)
             return
         }
-        
-        let challengeHash = Data(SHA256.hash(data: challengeData))
-        
-        service.attestKey(keyId, clientDataHash: challengeHash) { attestationObject, error in
+
+        let hash = Data(SHA256.hash(data: data))
+
+        service.attestKey(keyId, clientDataHash: hash) { att, error in
             if let error = error {
                 completion(nil, error)
-                return
+            } else {
+                completion(att?.base64EncodedString(), nil)
             }
-            let base64String = attestationObject?.base64EncodedString()
-            completion(base64String, nil)
         }
     }
 
-    // 3. 요청 서명
+    // ============================
+    // 3) Assertion
+    // ============================
     func assertionKey(keyId: String, clientDataHash: String, completion: @escaping (String?, Error?) -> Void) {
-        // 1. String을 Data로 변환 (UTF8)
-        guard let dataToHash = clientDataHash.data(using: .utf8) else {
-            let error = NSError(domain: "AppIntegrity", code: 400, userInfo: [NSLocalizedDescriptionKey: "Invalid client data string"])
-            completion(nil, error)
+        guard let data = clientDataHash.data(using: .utf8) else {
+            let err = NSError(domain: "AppIntegrity", code: 400,
+                              userInfo: [NSLocalizedDescriptionKey: "Invalid client data string"])
+            completion(nil, err)
             return
         }
 
-        // 여기서 SHA256 해시를 생성 (지문 만들기)
-        let hashedData = Data(SHA256.hash(data: dataToHash))
+        let hash = Data(SHA256.hash(data: data))
 
-        // DCAppAttestService 호출
-        service.generateAssertion(keyId, clientDataHash: hashedData) { assertionObject, error in
+        service.generateAssertion(keyId, clientDataHash: hash) { assertion, error in
             if let error = error {
-                // 실패 시 에러 반환
                 completion(nil, error)
-                return
+            } else {
+                completion(assertion?.base64EncodedString(), nil)
             }
-
-            // 성공 시 Assertion Object를 Base64 문자열로 변환해서 반환
-            let base64String = assertionObject?.base64EncodedString()
-            completion(base64String, nil)
         }
     }
 
+    // ============================
+    // Storage
+    // ============================
     private func saveKeyIdToStorage(_ keyId: String) {
         UserDefaults.standard.set(keyId, forKey: "appAttestKeyId")
     }
 
     private func getKeyIdFromStorage() -> String? {
-        return UserDefaults.standard.string(forKey: "appAttestKeyId")
+        UserDefaults.standard.string(forKey: "appAttestKeyId")
+    }
+
+    private func clearKeyIdFromStorage() {
+        UserDefaults.standard.removeObject(forKey: "appAttestKeyId")
     }
 }
