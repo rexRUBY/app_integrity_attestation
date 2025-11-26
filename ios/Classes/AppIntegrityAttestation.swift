@@ -62,16 +62,20 @@ public class AppIntegrityAttestation {
     // 3) Assertion
     // ============================
     func assertionKey(keyId: String, clientDataHash: String, completion: @escaping (String?, Error?) -> Void) {
-        guard let data = clientDataHash.data(using: .utf8) else {
+
+        // 1. Base64url 형태를 Swift가 인식할 수 있는 일반 Base64 형태로 변환 (패딩 포함)
+        let base64String = clientDataHash.base64urlToBase64()
+
+        // 2. Data(base64Encoded:)를 사용해서 32바이트 해시 Data로 디코딩
+        guard let hashData = Data(base64Encoded: base64String) else {
             let err = NSError(domain: "AppIntegrity", code: 400,
-                              userInfo: [NSLocalizedDescriptionKey: "Invalid client data string"])
+                              userInfo: [NSLocalizedDescriptionKey: "Invalid client data hash format (Base64url decoding failed)"])
             completion(nil, err)
             return
         }
 
-        let hash = Data(SHA256.hash(data: data))
-
-        service.generateAssertion(keyId, clientDataHash: hash) { assertion, error in
+        // 3. 정확하게 복원된 Data를 서비스 함수에 전달
+        service.generateAssertion(keyId, clientDataHash: hashData) { assertion, error in
             if let error = error {
                 completion(nil, error)
             } else {
@@ -93,5 +97,23 @@ public class AppIntegrityAttestation {
 
     private func clearKeyIdFromStorage() {
         UserDefaults.standard.removeObject(forKey: "appAttestKeyId")
+    }
+}
+
+// ============================
+// Helper
+// ============================
+extension String {
+    // Base64url 문자열을 일반 Base64 문자열로 변환하고 패딩을 추가
+    func base64urlToBase64() -> String {
+        var base64 = self
+            .replacingOccurrences(of: "-", with: "+") // URL-safe '-'를 '+'로
+            .replacingOccurrences(of: "_", with: "/") // URL-safe '_'를 '/'로
+
+        // 자바에서 withoutPadding()을 썼으므로, 패딩을 다시 추가 (Base64는 4의 배수여야 함)
+        while base64.count % 4 != 0 {
+            base64.append("=")
+        }
+        return base64
     }
 }
