@@ -9,20 +9,40 @@ public class AppIntegrityAttestation {
     // 생성자
     public init() {}
 
-    // 1. 키 생성
+    // 1. 키 발급
     func generateKey(completion: @escaping (String?, Error?) -> Void) {
-        if !service.isSupported {
-            let error = NSError(domain: "AppIntegrity", code: 400, userInfo: [NSLocalizedDescriptionKey: "Device not supported"])
-            completion(nil, error)
-            return
-        }
-        service.generateKey { keyId, error in
-            completion(keyId, error)
-        }
+            // 1. 디바이스 지원 여부 체크 (기존 코드 유지)
+            if !service.isSupported {
+                let error = NSError(domain: "AppIntegrity", code: 400, userInfo: [NSLocalizedDescriptionKey: "Device not supported"])
+                completion(nil, error)
+                return
+            }
+
+            // 2. [핵심] 이미 저장된 키 ID가 있는지 먼저 확인!
+            if let existingKeyId = self.getKeyIdFromStorage() {
+                print("기존 키가 존재해서 이걸 반환함: \(existingKeyId)")
+                completion(existingKeyId, nil)
+                return
+            }
+
+            // 3. 없으면 새로 생성
+            service.generateKey { keyId, error in
+                if let error = error as NSError?, error.code == -25299 {
+                     // 옵션 A: 중복 에러가 나면 기존 키를 강제로 다시 조회해서 반환 시도
+                     // 옵션 B: (더 추천) 기존 키를 삭제하고 다시 생성 (Reset)
+                     print("키체인 중복 에러 발생. 기존 키 정리 후 재시도 필요.")
+                }
+                // 정상 생성된 경우
+                if let newKeyId = keyId {
+                    self.saveKeyIdToStorage(newKeyId) // 생성된 ID 저장
+                }
+                completion(keyId, error)
+            }
     }
 
     // 2. 보증서 발급
     func attestKey(keyId: String, challenge: String, completion: @escaping (String?, Error?) -> Void) {
+        print("attest에서 받은 키 값:\(keyId)")
         guard let challengeData = challenge.data(using: .utf8) else {
             let error = NSError(domain: "AppIntegrity", code: 401, userInfo: [NSLocalizedDescriptionKey: "Invalid challenge"])
             completion(nil, error)
@@ -65,5 +85,13 @@ public class AppIntegrityAttestation {
             let base64String = assertionObject?.base64EncodedString()
             completion(base64String, nil)
         }
+    }
+
+    private func saveKeyIdToStorage(_ keyId: String) {
+        UserDefaults.standard.set(keyId, forKey: "appAttestKeyId")
+    }
+
+    private func getKeyIdFromStorage() -> String? {
+        return UserDefaults.standard.string(forKey: "appAttestKeyId")
     }
 }
