@@ -38,25 +38,38 @@ public class AppIntegrityAttestation {
     // 2) Attestation
     // ============================
     func attestKey(keyId: String, challenge: String, completion: @escaping (String?, Error?) -> Void) {
-        print("attest에 사용 한 키")
+        print("attest에 사용한 키:")
         print(keyId)
-        guard let data = challenge.data(using: .utf8) else {
-            let err = NSError(domain: "AppIntegrity", code: 401,
-                              userInfo: [NSLocalizedDescriptionKey: "Invalid challenge"])
+
+        // 1) Base64URL → Base64 변환
+        let base64String = challenge.base64urlToBase64()
+
+        // 2) Base64 디코딩해서 원본 바이트 복원
+        guard let rawChallenge = Data(base64Encoded: base64String) else {
+            let err = NSError(
+                domain: "AppIntegrity",
+                code: 401,
+                userInfo: [
+                    NSLocalizedDescriptionKey: "Invalid Base64 challenge (decoding failed)"
+                ]
+            )
             completion(nil, err)
             return
         }
 
-        let hash = Data(SHA256.hash(data: data))
+        // 3) SHA256(clientData) 계산
+        let clientDataHash = Data(SHA256.hash(data: rawChallenge))
 
-        service.attestKey(keyId, clientDataHash: hash) { att, error in
+        // 4) iOS 시스템 App Attest API 호출
+        service.attestKey(keyId, clientDataHash: clientDataHash) { attestation, error in
             if let error = error {
                 completion(nil, error)
             } else {
-                completion(att?.base64EncodedString(), nil)
+                completion(attestation?.base64EncodedString(), nil)
             }
         }
     }
+
 
     // ============================
     // 3) Assertion
