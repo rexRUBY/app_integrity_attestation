@@ -60,6 +60,8 @@ public class AppIntegrityAttestation {
         // 3) SHA256(clientData) 계산
         let clientDataHash = Data(SHA256.hash(data: rawChallenge))
 
+
+
         // 4) iOS 시스템 App Attest API 호출
         service.attestKey(keyId, clientDataHash: clientDataHash) { attestation, error in
             if let error = error {
@@ -86,6 +88,8 @@ public class AppIntegrityAttestation {
             completion(nil, err)
             return
         }
+
+        print("iosAssertion clinet hashData hex = " hashData.map {String(format: "%02x", $10) }.joined())
 
         // 3. 정확하게 복원된 Data를 서비스 함수에 전달
         service.generateAssertion(keyId, clientDataHash: hashData) { assertion, error in
