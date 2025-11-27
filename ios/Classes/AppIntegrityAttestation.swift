@@ -89,7 +89,7 @@ public class AppIntegrityAttestation {
             return
         }
 
-        print("iosAssertion clinet hashData hex = " hashData.map {String(format: "%02x", $10) }.joined())
+        print("iOS assertion clientDataHash hex =", hashData.map { String(format:"%02x", $0) }.joined())
 
         // 3. 정확하게 복원된 Data를 서비스 함수에 전달
         service.generateAssertion(keyId, clientDataHash: hashData) { assertion, error in
