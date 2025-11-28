@@ -76,23 +76,33 @@ public class AppIntegrityAttestation {
     // ============================
     // 3) Assertion
     // ============================
-    func assertionKey(keyId: String, clientDataHash: String, completion: @escaping (String?, Error?) -> Void) {
-
-        // 1. Base64url 형태를 Swift가 인식할 수 있는 일반 Base64 형태로 변환 (패딩 포함)
-        let base64String = clientDataHash.base64urlToBase64()
-
-        // 2. Data(base64Encoded:)를 사용해서 32바이트 해시 Data로 디코딩
-        guard let hashData = Data(base64Encoded: base64String) else {
-            let err = NSError(domain: "AppIntegrity", code: 400,
-                              userInfo: [NSLocalizedDescriptionKey: "Invalid client data hash format (Base64url decoding failed)"])
+    func assertionKey(
+        keyId: String,
+        challenge: String,          // 서버가 준 challenge(Base64URL 문자열)
+        completion: @escaping (String?, Error?) -> Void
+    ) {
+        // 1. Base64URL → Base64 → raw bytes 디코딩
+        let base64String = challenge.base64urlToBase64()
+        guard let rawChallenge = Data(base64Encoded: base64String) else {
+            let err = NSError(
+                domain: "AppIntegrity",
+                code: 400,
+                userInfo: [NSLocalizedDescriptionKey: "Invalid challenge format (base64 decode fail)"]
+            )
             completion(nil, err)
             return
         }
 
-        print("iOS assertion clientDataHash hex =", hashData.map { String(format:"%02x", $0) }.joined())
+        // 2. SHA-256(rawChallenge) → 32 bytes digest 생성 (AppAttest 규격)
+        let hash = Data(SHA256.hash(data: rawChallenge))
 
-        // 3. 정확하게 복원된 Data를 서비스 함수에 전달
-        service.generateAssertion(keyId, clientDataHash: hashData) { assertion, error in
+        print("iOS assertion clientDataHash hex =",
+              hash.map { String(format:"%02x", $0) }.joined())
+        // 반드시 길이 32여야 한다.
+        print("iOS assertion clientDataHash len =", hash.count)
+
+        // 3. 생성한 32바이트 digest를 iOS에 그대로 전달
+        service.generateAssertion(keyId, clientDataHash: hash) { assertion, error in
             if let error = error {
                 completion(nil, error)
             } else {
