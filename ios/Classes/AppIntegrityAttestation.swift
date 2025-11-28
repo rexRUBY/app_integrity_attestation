@@ -78,38 +78,27 @@ public class AppIntegrityAttestation {
     // ============================
     func assertionKey(
         keyId: String,
-        challenge: String,          // 서버가 준 challenge(Base64URL 문자열)
+        clientDataHash challenge: String,     // ★ label은 clientDataHash / 내부 이름은 challenge
         completion: @escaping (String?, Error?) -> Void
     ) {
-        // 1. Base64URL → Base64 → raw bytes 디코딩
         let base64String = challenge.base64urlToBase64()
         guard let rawChallenge = Data(base64Encoded: base64String) else {
             let err = NSError(
                 domain: "AppIntegrity",
                 code: 400,
-                userInfo: [NSLocalizedDescriptionKey: "Invalid challenge format (base64 decode fail)"]
+                userInfo: [NSLocalizedDescriptionKey: "Invalid challenge format"]
             )
             completion(nil, err)
             return
         }
 
-        // 2. SHA-256(rawChallenge) → 32 bytes digest 생성 (AppAttest 규격)
         let hash = Data(SHA256.hash(data: rawChallenge))
 
-        print("iOS assertion clientDataHash hex =",
-              hash.map { String(format:"%02x", $0) }.joined())
-        // 반드시 길이 32여야 한다.
-        print("iOS assertion clientDataHash len =", hash.count)
-
-        // 3. 생성한 32바이트 digest를 iOS에 그대로 전달
         service.generateAssertion(keyId, clientDataHash: hash) { assertion, error in
-            if let error = error {
-                completion(nil, error)
-            } else {
-                completion(assertion?.base64EncodedString(), nil)
-            }
+            completion(assertion?.base64EncodedString(), error)
         }
     }
+
 
     // ============================
     // Storage
