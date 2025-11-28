@@ -78,23 +78,30 @@ public class AppIntegrityAttestation {
     // ============================
     func assertionKey(
         keyId: String,
-        clientDataHash challenge: String,     // ★ label은 clientDataHash / 내부 이름은 challenge
+        clientDataHash challenge: String,
         completion: @escaping (String?, Error?) -> Void
     ) {
+        print("📌 assertionKey called")
+        print("📌 raw challenge param =", challenge)
+
         let base64String = challenge.base64urlToBase64()
+        print("📌 base64 padded =", base64String)
+
         guard let rawChallenge = Data(base64Encoded: base64String) else {
-            let err = NSError(
-                domain: "AppIntegrity",
-                code: 400,
-                userInfo: [NSLocalizedDescriptionKey: "Invalid challenge format"]
-            )
-            completion(nil, err)
+            print("❌ Base64 decode FAIL — challenge is NOT valid Base64")
+            print("❌ challenge(base64) =", base64String)
+            completion(nil, NSError(domain:"AppIntegrity", code:400, userInfo:nil))
             return
         }
 
-        let hash = Data(SHA256.hash(data: rawChallenge))
+        print("📌 rawChallenge hex =", rawChallenge.map { String(format:"%02x", $0) }.joined())
+        print("📌 rawChallenge len =", rawChallenge.count)
 
-        service.generateAssertion(keyId, clientDataHash: hash) { assertion, error in
+        let digest = Data(SHA256.hash(data: rawChallenge))
+        print("✅ digest hex =", digest.map { String(format:"%02x", $0) }.joined())
+        print("✅ digest len =", digest.count)
+
+        service.generateAssertion(keyId, clientDataHash: digest) { assertion, error in
             completion(assertion?.base64EncodedString(), error)
         }
     }
