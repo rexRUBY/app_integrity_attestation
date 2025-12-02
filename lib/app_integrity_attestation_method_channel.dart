@@ -74,19 +74,19 @@ class MethodChannelAppIntegrityAttestation
   @override
   Future<String?> assertionKey({
     required String keyId,
-    required String clientDataHash,
+    required String challenge,
     required String requestData,
   }) async {
     if (!Platform.isIOS) return null;
     try {
       final String? assertion = await methodChannel.invokeMethod<String>(
         'assertionKey',
-        {"keyId": keyId, "clientDataHash": clientDataHash, "requestData": requestData},
+        {"keyId": keyId, "challenge": challenge, "requestData": requestData},
       );
       return assertion;
     } on PlatformException catch (e) {
       print(
-        "assertionKey(keyId: ${keyId}, clientDataHash: ${clientDataHash}) => iOS 요청 서명 발급 실패: ${e.message}",
+        "assertionKey(keyId: ${keyId}, clientDataHash: ${challenge}) => iOS 요청 서명 발급 실패: ${e.message}",
       );
       return null;
     }

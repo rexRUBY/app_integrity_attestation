@@ -20,7 +20,7 @@ class _MyAppState extends State<MyApp> {
 
   // iOS 테스트 흐름을 위해 KeyID 저장할 변수
   String? _iosKeyId;
-  String clientDataHash = 'abcd1234';
+  String challenge = 'abcd1234';
 
   final _plugin = AppIntegrityAttestation();
 
@@ -90,7 +90,7 @@ class _MyAppState extends State<MyApp> {
 
     setState(() => _statusLog = "iOS Assertion(서명) 생성 중...");
     try {
-      final assertionObj = await _plugin.assertionKey(keyId: _iosKeyId ?? '', clientDataHash: clientDataHash, requestData: "app-assertion");
+      final assertionObj = await _plugin.assertionKey(keyId: _iosKeyId ?? '', challenge: challenge, requestData: "app-assertion");
       setState(() {
         _statusLog = "Assertion 성공(Base64)";
       });

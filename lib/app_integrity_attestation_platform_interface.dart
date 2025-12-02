@@ -44,7 +44,7 @@ abstract class AppIntegrityAttestationPlatform extends PlatformInterface {
   // 3. 서버 요청 검증용 서명 생성 (Assertion)
   Future<String?> assertionKey({
     required String keyId,
-    required String clientDataHash,
+    required String challenge,
     required String requestData
   }) {
     throw UnimplementedError('assertionKey() has not been implemented.');

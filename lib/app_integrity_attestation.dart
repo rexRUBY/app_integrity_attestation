@@ -27,12 +27,12 @@ class AppIntegrityAttestation {
 
   Future<String?> assertionKey({
     required String keyId,
-    required String clientDataHash,
+    required String challenge,
     required String requestData,
   }) {
     return AppIntegrityAttestationPlatform.instance.assertionKey(
       keyId: keyId,
-      clientDataHash: clientDataHash,
+      challenge: challenge,
       requestData: requestData
     );
   }
