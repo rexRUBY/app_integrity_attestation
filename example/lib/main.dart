@@ -90,7 +90,7 @@ class _MyAppState extends State<MyApp> {
 
     setState(() => _statusLog = "iOS Assertion(서명) 생성 중...");
     try {
-      final assertionObj = await _plugin.assertionKey(keyId: _iosKeyId ?? '', clientDataHash: clientDataHash);
+      final assertionObj = await _plugin.assertionKey(keyId: _iosKeyId ?? '', clientDataHash: clientDataHash, requestData: "app-assertion");
       setState(() {
         _statusLog = "Assertion 성공(Base64)";
       });

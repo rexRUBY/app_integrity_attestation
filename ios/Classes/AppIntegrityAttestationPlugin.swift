@@ -42,11 +42,12 @@ public class AppIntegrityAttestationPlugin: NSObject, FlutterPlugin {
         case "assertionKey":
             guard let args = call.arguments as? [String: Any],
                   let keyId = args["keyId"] as? String,
-                  let clientDataHash = args["clientDataHash"] as? String else {
+                  let challenge = args["challenge"] as? String,
+                  let requestData = args["requestData"] as? String else {
                 result(FlutterError(code: "INVALID_ARGS", message: "Args missing", details: nil))
                 return
             }
-            implementation.assertionKey(keyId: keyId, clientDataHash: clientDataHash) { assertionString, error in
+            implementation.assertionKey(keyId: keyId, challenge: challenge, requestData: requestData) { assertionString, error in
                 if let error = error {
                     result(FlutterError(code: "ASSERTION_ERROR", message: error.localizedDescription, details: nil))
                 } else {
