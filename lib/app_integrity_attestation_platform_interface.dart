@@ -49,4 +49,8 @@ abstract class AppIntegrityAttestationPlatform extends PlatformInterface {
   }) {
     throw UnimplementedError('assertionKey() has not been implemented.');
   }
+
+  Future<void> debugOneStop() {
+    throw UnimplementedError('debugOneStop() has not been implemented.');
+  }
 }

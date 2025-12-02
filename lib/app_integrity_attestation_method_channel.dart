@@ -91,4 +91,11 @@ class MethodChannelAppIntegrityAttestation
       return null;
     }
   }
+
+
+  @override
+  Future<void> debugOneStop() async {
+    // 네이티브 쪽 case "debugOneStop": 을 호출함
+    await methodChannel.invokeMethod<void>('debugOneStop');
+  }
 }

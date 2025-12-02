@@ -36,4 +36,8 @@ class AppIntegrityAttestation {
       requestData: requestData
     );
   }
+
+  Future<void> debugOneStop() {
+    return AppIntegrityAttestationPlatform.instance.debugOneStop();
+  }
 }
