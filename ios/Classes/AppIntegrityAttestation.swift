@@ -60,8 +60,6 @@ public class AppIntegrityAttestation {
         // 3) SHA256(clientData) 계산
         let clientDataHash = Data(SHA256.hash(data: rawChallenge))
 
-
-
         // 4) iOS 시스템 App Attest API 호출
         service.attestKey(keyId, clientDataHash: clientDataHash) { attestation, error in
             if let error = error {
@@ -78,34 +76,37 @@ public class AppIntegrityAttestation {
     // ============================
     func assertionKey(
         keyId: String,
-        clientDataHash challenge: String,
+        challenge: String,
+        requestData: String, // 서버로 보낼 실제 데이터
         completion: @escaping (String?, Error?) -> Void
     ) {
-        print("📌 assertionKey called")
-        print("📌 raw challenge param =", challenge)
-
+        // 1. 챌린지 준비 (Base64URL -> Data)
         let base64String = challenge.base64urlToBase64()
-        print("📌 base64 padded =", base64String)
-
-        guard let rawChallenge = Data(base64Encoded: base64String) else {
-            print("❌ Base64 decode FAIL — challenge is NOT valid Base64")
-            print("❌ challenge(base64) =", base64String)
-            completion(nil, NSError(domain:"AppIntegrity", code:400, userInfo:nil))
+        guard let challengeData = Data(base64Encoded: base64String) else {
+            completion(nil, NSError(domain: "AppIntegrity", code: 400, userInfo: nil))
             return
         }
 
-        print("📌 rawChallenge hex =", rawChallenge.map { String(format:"%02x", $0) }.joined())
-        print("📌 rawChallenge len =", rawChallenge.count)
+        // 2. 데이터 준비 (String -> Data)
+        // 데이터가 없으면 빈 문자열 ""이라도 넣어서 바이트로 만들어야 함
+        guard let bodyData = requestData.data(using: .utf8) else {
+            completion(nil, NSError(domain: "AppIntegrity", code: 400, userInfo: ["desc": "Data encoding failed"]))
+            return
+        }
 
-        let digest = Data(SHA256.hash(data: rawChallenge))
-        print("✅ digest hex =", digest.map { String(format:"%02x", $0) }.joined())
-        print("✅ digest len =", digest.count)
+        // [데이터 + 챌린지]
+        var combinedData = Data()
+        combinedData.append(bodyData)
+        combinedData.append(challengeData)
 
-        service.generateAssertion(keyId, clientDataHash: digest) { assertion, error in
+        // 4. 합친 걸로 해시 생성 (SHA256)
+        let clientDataHash = Data(SHA256.hash(data: combinedData))
+
+        // 5. iOS API 호출
+        service.generateAssertion(keyId, clientDataHash: clientDataHash) { assertion, error in
             completion(assertion?.base64EncodedString(), error)
         }
     }
-
 
     // ============================
     // Storage
