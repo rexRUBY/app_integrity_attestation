@@ -45,6 +45,7 @@ abstract class AppIntegrityAttestationPlatform extends PlatformInterface {
   Future<String?> assertionKey({
     required String keyId,
     required String clientDataHash,
+    required String requestData
   }) {
     throw UnimplementedError('assertionKey() has not been implemented.');
   }

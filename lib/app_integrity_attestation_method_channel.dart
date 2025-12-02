@@ -75,12 +75,13 @@ class MethodChannelAppIntegrityAttestation
   Future<String?> assertionKey({
     required String keyId,
     required String clientDataHash,
+    required String requestData,
   }) async {
     if (!Platform.isIOS) return null;
     try {
       final String? assertion = await methodChannel.invokeMethod<String>(
         'assertionKey',
-        {"keyId": keyId, "clientDataHash": clientDataHash},
+        {"keyId": keyId, "clientDataHash": clientDataHash, "requestData": requestData},
       );
       return assertion;
     } on PlatformException catch (e) {
