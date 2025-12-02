@@ -102,6 +102,9 @@ public class AppIntegrityAttestation {
         // 4. 합친 걸로 해시 생성 (SHA256)
         let clientDataHash = Data(SHA256.hash(data: combinedData))
 
+        let swiftHashHex = clientDataHash.map { String(format: "%02X", $0) }.joined()
+            print("\n🧐 [비교용] Swift가 만든 해시값(Hex): \(swiftHashHex)")
+            print("--------------------------------------------------\n")
 
         // 5. iOS API 호출
         service.generateAssertion(keyId, clientDataHash: clientDataHash) { assertion, error in

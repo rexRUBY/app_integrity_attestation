@@ -116,6 +116,8 @@ public class AppIntegrityAttestationPlugin: NSObject, FlutterPlugin {
                         return
                     }
 
+
+
                     print("\n📝 [로그 2] Assertion Object (자바 변수 assertionStr 에 복붙):")
                     print(assertion)
 
