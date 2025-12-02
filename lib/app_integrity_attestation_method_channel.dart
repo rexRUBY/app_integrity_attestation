@@ -86,7 +86,7 @@ class MethodChannelAppIntegrityAttestation
       return assertion;
     } on PlatformException catch (e) {
       print(
-        "assertionKey(keyId: ${keyId}, clientDataHash: ${challenge}) => iOS 요청 서명 발급 실패: ${e.message}",
+        "assertionKey(keyId: ${keyId}, challenge: ${challenge}) => iOS 요청 서명 발급 실패: ${e.message}",
       );
       return null;
     }
